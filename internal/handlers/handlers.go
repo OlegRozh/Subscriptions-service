@@ -56,6 +56,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to create subscription"})
 		return
 	}
+	h.logger.Info("subscription created", "id", id, "service_name", sub.ServiceName)
 	writeJSON(w, http.StatusCreated, map[string]int64{"id": id})
 }
 
@@ -117,6 +118,28 @@ func (h *Handler) GetSum(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]int{"total_sum": sum})
 }
 
+// GetList godoc
+// @Summary Получить список подписок
+// @Tags subscriptions
+// @Produce json
+// @Param user_id query string false "ID пользователя"
+// @Param service_name query string false "Название сервиса"
+// @Success 200 {object} map[string][]models.Subscription
+// @Failure 500 {object} map[string]string
+// @Router /subscriptions [get]
+func (h *Handler) GetList(w http.ResponseWriter, r *http.Request) {
+	userID := r.URL.Query().Get("user_id")
+	serviceName := r.URL.Query().Get("service_name")
+
+	subs, err := h.repo.GetList(r.Context(), userID, serviceName)
+	if err != nil {
+		h.logger.Error("failed to list subscriptions", "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"subscriptions": subs})
+}
+
 // Update godoc
 // @Summary Обновить подписку
 // @Tags subscriptions
@@ -139,14 +162,14 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 	var sub models.Subscription
 	if err := json.NewDecoder(r.Body).Decode(&sub); err != nil {
-		h.logger.Error("failed to decode request body", "error", err)
+		h.logger.Warn("failed to decode request body", "error", err)
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 		return
 	}
 	sub.Id = id
 	if sub.ServiceName == "" || sub.Price <= 0 || sub.UserId == "" || sub.StartMonth.IsZero() {
-		h.logger.Warn("invalid request body")
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+		h.logger.Warn("validation failed", "service_name", sub.ServiceName, "price", sub.Price, "user_id", sub.UserId, "start_month", sub.StartMonth)
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "service_name, price, user_id, start_month are required"})
 		return
 	}
 	if err := h.repo.Update(r.Context(), &sub); err != nil {
@@ -154,6 +177,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Subscription not found"})
 		return
 	}
+	h.logger.Info("subscription updated", "id", id)
 	writeJSON(w, http.StatusNoContent, nil)
 }
 
@@ -179,5 +203,6 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Subscription not found"})
 		return
 	}
+	h.logger.Info("subscription deleted", "id", id)
 	writeJSON(w, http.StatusNoContent, nil)
 }

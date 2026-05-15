@@ -6,6 +6,7 @@
 - ✅ **CRUD операции** — создание, чтение, обновление, удаление подписок
 - ✅ **Аналитика расходов** — подсчёт суммы подписок за выбранный период
 - ✅ **Фильтрация** — по пользователю, названию сервиса, датам
+- ✅ **Middleware** — логирование HTTP запросов, RequestID, Recoverer, RealIP
 - ✅ **Контейнеризация** — готов к запуску в Docker
 - ✅ **Документация API** — интерактивная Swagger документация
 
@@ -15,6 +16,7 @@
 |-----------|--------|
 | **Язык** | Go 1.25.1 |
 | **Роутер** | chi    |
+| **Middleware** | RequestID, RealIP, Logger, Recoverer |
 | **База данных** | PostgreSQL 18.3 |
 | **Драйвер БД** | pgxpool |
 | **Миграции** | goose  |
@@ -22,20 +24,20 @@
 | **Контейнеризация** | Docker, Docker Compose |
 | **Документация** | Swagger |
 
+
 **Для работы приложения необходим файл .env с переменными окружения. Создайте его в корне проекта.**
 
 ```env
+PROJECT_ROOT=.
 # PostgreSQL
 POSTGRES_DB=Subscriptions
-POSTGRES_USER=myuser
-POSTGRES_PASSWORD=pg12345
-
-# DATABASE_URL для Docker Compose
-DATABASE_URL=postgres://myuser:pg12345@postgres:5432/Subscriptions?sslmode=disable
-
-# Goose (миграции)
+POSTGRES_USER=CHANGE_ME
+POSTGRES_PASSWORD=CHANGE_ME
+# DATABASE_URL
+DATABASE_URL=postgres://CHANGE_ME:CHANGE_ME@localhost:5432/Subscriptions?sslmode=disable
+# Goose
 GOOSE_DRIVER=postgres
-GOOSE_DBSTRING="user=myuser password=pg12345 dbname=Subscriptions host=localhost port=5432 sslmode=disable"
+GOOSE_DBSTRING="user=CHANGE_ME password=CHANGE_ME dbname=Subscriptions host=localhost port=5432 sslmode=disable"
 GOOSE_MIGRATION_DIR=./migrations
 ```
 ### Запуск через Docker

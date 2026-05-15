@@ -8,6 +8,7 @@ import (
 	"github.com/OlegRozh/subscriptions-service/internal/server"
 	"github.com/OlegRozh/subscriptions-service/internal/storage"
 	"github.com/OlegRozh/subscriptions-service/migrations"
+	"github.com/joho/godotenv"
 )
 
 // @title Subscriptions Service API
@@ -20,9 +21,9 @@ func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	logger.Info("Start app")
 	//Uncomment to local run and test
-	//if err := godotenv.Load(); err != nil {
-	//	logger.Warn("No .env file found, using system environment variables")
-	//}
+	if err := godotenv.Load(); err != nil {
+		logger.Warn("No .env file found, using system environment variables")
+	}
 	//Comment to run docker compose
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {

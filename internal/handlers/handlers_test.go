@@ -51,6 +51,14 @@ func (m *MockRepository) GetSum(ctx context.Context, userID, serviceName, start,
 	return args.Get(0).(int), args.Error(1)
 }
 
+func (m *MockRepository) GetList(ctx context.Context, userID, serviceName string) ([]models.Subscription, error) {
+	args := m.Called(ctx, userID, serviceName)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]models.Subscription), args.Error(1)
+}
+
 func (m *MockRepository) Close() error {
 	args := m.Called()
 	return args.Error(0)
@@ -174,7 +182,7 @@ func TestGet(t *testing.T) {
 		mockReturn     *models.Subscription
 		mockError      error
 		expectedStatus int
-		expectedBody   interface{}
+		expectedBody   any
 	}{
 		{
 			name: "success",
@@ -198,13 +206,13 @@ func TestGet(t *testing.T) {
 			id:             "999",
 			mockError:      errors.New("not found"),
 			expectedStatus: http.StatusNotFound,
-			expectedBody:   map[string]interface{}{"error": "Subscription not found"},
+			expectedBody:   map[string]any{"error": "Subscription not found"},
 		},
 		{
 			name:           "invalid id",
 			id:             "invalid",
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   map[string]interface{}{"error": "Invalid subscription id"},
+			expectedBody:   map[string]any{"error": "Invalid subscription id"},
 		},
 	}
 
@@ -307,6 +315,30 @@ func TestGetSum(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetList(t *testing.T) {
+	mockRepo := new(MockRepository)
+	handler := NewHandler(mockRepo, setupTestLogger())
+
+	expected := []models.Subscription{
+		{Id: 1, ServiceName: "Yandex Plus", Price: 399, UserId: "123"},
+		{Id: 2, ServiceName: "Netflix", Price: 799, UserId: "123"},
+	}
+
+	mockRepo.On("GetList", mock.Anything, "123", "").Return(expected, nil)
+
+	req := httptest.NewRequest("GET", "/subscriptions?user_id=123", nil)
+	w := httptest.NewRecorder()
+
+	handler.GetList(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string][]models.Subscription
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Len(t, resp["subscriptions"], 2)
+	mockRepo.AssertExpectations(t)
 }
 
 func TestDelete(t *testing.T) {
